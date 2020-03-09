@@ -190,7 +190,7 @@ class window.ColoringBook extends PaperJSApp
             return
           h.item.set
             fillColor: "red"
-            
+            dirty: true
               
     ###
     Turns everything into a rainbow fill.
@@ -207,6 +207,7 @@ class window.ColoringBook extends PaperJSApp
           if h.item.ui
             return
           h.item.set
+            dirty: true
             fillColor: 
               gradient:
                 stops: ['yellow', 'red', 'blue']
@@ -235,6 +236,7 @@ class window.ColoringBook extends PaperJSApp
               return
             h.item.set
               fillColor: palette.lastColor
+              dirty: true
       
     window.historyTracker = new paper.Tool
       name: "historyTracker"
@@ -242,18 +244,135 @@ class window.ColoringBook extends PaperJSApp
         scope = this
         alertify.error "TODO!"
       
-    window.myInteraction1 = new paper.Tool
-      name: "myInteraction1"
+    window.Kaleidoscope = new paper.Tool
+      name: "1 - Fun Coloring"
       onMouseDown: (event)->
         scope = this
-        alertify.error "TODO!"
+        palette = paper.project.getItem
+          name: "palette"
       
-    window.myInteraction2 = new paper.Tool
-      name: "myInteraction2"  
+        # GET THE ITEM PATH CLICKED
+        hitResults = paper.project.hitTestAll event.point, hitOptions
+        
+        # FOR EACH ITEM PATH CLICKED
+        _.each hitResults, (el)->
+          clickedPath = el.item
+          # Don't color black lines
+          if el.item.fillColor.brightness == 0
+            return
+            
+          clickedPath.fillColor = palette.lastColor
+          
+          # GET CENTER OF THE ITEM PATH
+          clickedPath_center = clickedPath.position
+          
+          # GET POINTS OF ITEM PATH THAT IS 90, 180, -90 DEGREE AWAY FROM ITEM
+          points = k_paths(clickedPath_center,4)
+          
+          # GET PATH THAT CONTAINS THE POINTS
+          allPaths = paper.project.getItems({class: "Path"})
+          paths = []
+          _.each points, (p) ->
+            path = _.filter allPaths, (path)-> return(path.contains(p))
+            Array::push.apply paths, path
+          
+          # COMPARE AREA AND PERIMETER OF THOSE PATHS WITH ORIGINAL
+          
+          
+          # IF HAVING SIMILAR AREA AND PARAMETER, COLOR THOSE PATHS OF POINTS
+          
+          _.each paths, (el)->
+            el.fillColor = palette.lastColor
+            el.set
+              dirty: true
+          
+          # CHANGE COLOR EVERY TIME DONE CLICKING
+          palette.lastColor = paper.Color.random() #Not working
+          # or when changing colot on the color palla
+          
+
+      k_paths = (p,n) ->
+        degree = 360/n
+        points = (1 for [0..n-1]) 
+        center = paper.view.center
+        i = 0
+
+        _.each points, (el)->
+          point = new paper.Point(p.rotate(i*degree,center))
+          points.push point
+          i += 1
+        
+        beg = n/2
+        end = n-1
+        res = points[4..8]
+        return res
+        
+    window.autocomplete = new paper.Tool
+      name: "2 - Autocomplete"  
       onMouseDown: (event)->
         scope = this
-        alertify.error "TODO!"
-              
+        # palette = paper.project.getItem
+        #   name: "palette"
+          
+        # if palette and palette.lastColor
+        #   hitResults = paper.project.hitTestAll event.point, hitOptions
+        #   _.each hitResults, (h)->
+        #     # Don't color black lines
+        #     if h.item.fillColor.brightness == 0
+        #       return
+        #     if h.item.ui
+        #       return
+        #     h.item.set
+        #       fillColor: palette.lastColor
+       
+            # SELECT ALL PATH 
+            # allPaths = paper.project.getItems({class: "Path"})
+            
+            # FILTER PATHS OF THE PAINT
+            
+            
+            # COLOR SELECTED PATHS
+            # _.each selectedPaths, (p)->
+            #   p.fillColor = paper.Color(palette.lastColor,0.2)
+          
+            
+         
+          # h.item.selected = true;
+          
+        
+        allPaths = paper.project.getItems({class: "Path"})
+        compoundPaths = paper.project.getItems({class: "CompoundPath"})
+        colorCompoundPaths = []
+        _.each compoundPaths, (path)->
+          if path.fillColor.brightness == 0
+            path.fillColor = "black"
+          else
+            if !path.dirty
+              path.fillColor = paper.Color.random()
+              path.set
+                dirty: true
+        palette = paper.project.getItem
+          name: "palette"
+        ui = palette.getItems
+          ignoreSelection: "true"
+        
+        colorSpots = _.filter allPaths, (path)-> return(path not in ui)
+
+        _.each colorSpots, (colorSpot)->
+          if !colorSpot.dirty
+            colorSpot.fillColor = paper.Color.random()
+            colorSpot.set
+              dirty: true
+    ###
+    swatches = palette.getItems
+      name: "swatch"
+    
+    _.each swatches, (s)->
+      s.set
+        onMouseDown: (e)->
+          palette.lastColor = this.fillColor
+          
+    ###             
 
     # MUST BE THE LAST LINES IN CREATE_TOOLS          
     scope.updateToolController()
@@ -264,6 +383,9 @@ class window.ColoringBook extends PaperJSApp
     if tool_matches.length > 0
       paper.tool = tool_matches[0]
       
+### ACCESS PALETTE THROUGH THE SCENE GRAPH
+.LASTCOLOR -> LAST COLOR GET CLICKED ON
+###
 class window.ColorPalette 
   constructor: ()->
     console.log "Making color palette"
@@ -291,6 +413,7 @@ class window.ColorPalette
       stroke_color.brightness = stroke_color.brightness - 0.3
       swatch = new paper.Path.Circle
         name: "swatch"
+        ignoreSelection: "true"
         parent: g
         radius: 20
         fillColor: color
@@ -302,6 +425,7 @@ class window.ColorPalette
         
     # ADD BACKGROUND TO GROUP
     bg = new paper.Path.Rectangle
+      ignoreSelection: "true"
       parent: g
       rectangle: g.bounds.expand(15)
       fillColor: new paper.Color(0.9)
