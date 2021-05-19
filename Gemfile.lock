@@ -96,7 +96,8 @@ GEM
       mini_portile2 (~> 2.4.0)
     normalize-rails (4.1.1)
     paperjs (0.11.5)
-    puma (3.12.2)
+    puma (4.3.8)
+      nio4r (~> 2.0)
     rack (2.2.2)
     rack-test (0.6.3)
       rack (>= 1.0)
@@ -186,7 +187,7 @@ DEPENDENCIES
   listen (~> 3.0.5)
   normalize-rails
   paperjs
-  puma (~> 3.0)
+  puma (~> 4.3)
   rails (~> 5.0.0)
   sass-rails (~> 5.0)
   spring
